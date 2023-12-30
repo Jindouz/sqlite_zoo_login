@@ -1,0 +1,49 @@
+{% extends 'layout.html' %}
+
+{% block title %}Add Car{% endblock %}
+
+{% block content %}
+<div class="container mt-4 col-lg-7">
+    <h1>Add Animal</h1>
+    <form method="post" action="{{ url_for('add') }}" class="needs-validation" novalidate>
+        <div class="form-group">
+            <label for="image">Image link:</label>
+            <input type="text" name="image" class="form-control" placeholder="Image link" required>
+            <div class="invalid-feedback">
+                Please provide a valid image link.
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" name="name" class="form-control" placeholder="Name" required>
+            <div class="invalid-feedback">
+                Please provide a valid name.
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="species">Species:</label>
+            <input type="number" name="species" class="form-control" placeholder="Species" required>
+            <div class="invalid-feedback">
+                Please provide a valid species.
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="age">Age:</label>
+            <input type="text" name="age" class="form-control" placeholder="Age" required>
+            <div class="invalid-feedback">
+                Please provide a valid age.
+            </div>
+        </div>
+        <br>
+        <label for="dietCategory">Diet Category:</label>
+        <select id="dietCategory" name="dietCategory">
+            <option value="Predator">Predator</option>
+            <option value="Herbivore">Herbivore</option>
+        </select>
+        <br><br>
+        <button type="submit" class="btn btn-primary">Add Animal</button>
+    </form>
+    <br>
+    <a href="{{ url_for('index') }}" class="mt-2 btn btn-secondary">Back</a>
+</div>
+{% endblock %}
