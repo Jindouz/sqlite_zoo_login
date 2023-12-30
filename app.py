@@ -1,3 +1,4 @@
+from flask_bcrypt import Bcrypt, check_password_hash
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 import sqlite3
@@ -7,7 +8,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 app.config['SECRET_KEY'] = 'your_secret_key_here'
 
-
+bcrypt = Bcrypt(app)
 # ====== SQLite DB =======
 
 # con = sqlite3.connect('zoo.db')
@@ -90,7 +91,6 @@ def index():
     # Return JSON data
     if request.headers.get('Content-Type') == 'application/json':
         return jsonify({'data': data_json})
-
     # Render the template with JSON data
     return render_template('index.html', data=data_json)
 
@@ -181,7 +181,7 @@ def edit(animal_id):
 
 #==== Login ====
 
-
+# creates a new user account with a hashed password
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.headers.get('Content-Type') == 'application/json':
@@ -189,6 +189,8 @@ def register():
         data = request.json
         username = data.get('username')
         password = data.get('password')
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         with sqlite3.connect('users.db') as conn:
             cur = conn.cursor()
@@ -198,14 +200,17 @@ def register():
             if existing_user:
                 return jsonify({'status': 'error', 'message': 'Username already exists. Please choose a different username.'})
 
-            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
             conn.commit()
 
         return jsonify({'status': 'success', 'message': 'User registered successfully'})
+
     elif request.method == 'POST':
         # Regular form submission handling
         username = request.form['username']
         password = request.form['password']
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         with sqlite3.connect('users.db') as conn:
             cur = conn.cursor()
@@ -216,12 +221,12 @@ def register():
                 flash('Username already exists. Please choose a different username.', 'error')
                 return render_template('register.html')
 
-            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
             conn.commit()
 
-        return redirect(url_for('index'))  # Redirect to a different page after successful registration
+        return redirect(url_for('index'))
 
-    return render_template('register.html')  # Render the register page for GET requests
+    return render_template('register.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -234,10 +239,10 @@ def login():
 
         with sqlite3.connect('users.db') as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+            cur.execute("SELECT * FROM users WHERE username = ?", (username,))
             user = cur.fetchone()
 
-        if user:
+        if user and check_password_hash(user[2], password):  # Assuming the hashed password is at index 2
             return jsonify({'status': 'success', 'message': 'Login successful'})
         else:
             return jsonify({'status': 'error', 'message': 'Invalid username or password'})
@@ -248,10 +253,10 @@ def login():
 
         with sqlite3.connect('users.db') as conn:
             cur = conn.cursor()
-            cur.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+            cur.execute("SELECT * FROM users WHERE username = ?", (username,))
             user = cur.fetchone()
 
-        if user:
+        if user and check_password_hash(user[2], password):  # Assuming the hashed password is at index 2
             login_user(User(user[0]))  # Log in the user
             return redirect(url_for('index'))  # Redirect to a different page after successful login
         else:
